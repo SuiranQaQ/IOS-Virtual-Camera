@@ -197,3 +197,66 @@ static AVSampleBufferDisplayLayer *g_previewLayer = nil;
     g_previewLayer.frame = self.view.bounds;
     [self.view.layer addSublayer:g_previewLayer];
 }
+- (Here's the continuation and final version of the Tweak.xm file, ensuring the jailbroken global virtual camera project is fully integrated with HLS, EXIF metadata, and camera API hooks.
+
+### 1. Tweak.xm (continued)
+
+- (void)removePreviewLayer {
+    [g_previewLayer removeFromSuperlayer];
+    g_previewLayer = nil;
+}
+
+@end
+
+#pragma mark - 系统相机钩子 (Hooking the Camera API)
+%hook AVCaptureSession
+
+- (void)startRunning {
+    NSLog(@"启动系统摄像头，并替换为虚拟相机内容");
+    
+    VirtualCameraViewController *vc = [[VirtualCameraViewController alloc] init];
+    [vc startVirtualCamera];
+
+    %orig;  // 可根据需求禁用系统摄像头
+}
+
+- (void)stopRunning {
+    NSLog(@"停止系统摄像头并关闭虚拟相机");
+    
+    VirtualCameraViewController *vc = [[VirtualCameraViewController alloc] init];
+    [vc stopVirtualCamera];
+
+    %orig;
+}
+
+%end
+Makefile
+ARCHS = arm64 arm64e
+TARGET = iphone:clang:latest:13.0
+
+THEOS_DEVICE_IP = localhost
+THEOS_DEVICE_PORT = 22
+
+include $(THEOS)/makefiles/common.mk
+
+TWEAK_NAME = VirtualCamera
+
+VirtualCamera_FILES = Tweak.xm
+VirtualCamera_FRAMEWORKS = UIKit AVFoundation CoreMedia MediaPlayer ImageIO
+
+include $(THEOS_MAKE_PATH)/tweak.mk
+
+after-install::
+ install.exec "killall -9 SpringBoard"
+
+
+Control File (control)
+Package: com.yourname.virtualcamera
+Name: VirtualCamera
+Version: 1.0-1
+Architecture: iphoneos-arm
+Description: A virtual camera for jailbroken devices, supporting HLS streams, local video, and EXIF metadata handling.
+Maintainer: Your Name <your.email@example.com>
+Author: Your Name
+Section: Tweaks
+Depends: mobilesubstrate
